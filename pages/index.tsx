@@ -2,8 +2,23 @@ import type { NextPage } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
+import { signIn, signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 
 const Home: NextPage = () => {
+  const {push} = useRouter();
+
+  const logout = () => {
+    signOut({redirect: false}).then(() =>
+        push(
+            `http://localhost:8080/auth/realms/<REALM>/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent(
+                "http://localhost:3000/"
+            )}`
+        )
+    );
+  }
+
+  const session = useSession()
   return (
     <div className={styles.container}>
       <Head>
@@ -22,6 +37,10 @@ const Home: NextPage = () => {
           <code className={styles.code}>pages/index.tsx</code>
         </p>
 
+        {!session.data ? <button onClick={() => signIn('keycloak')}>Sign-In</button>
+        : <button onClick={() => logout()}>Sign-Out</button>}
+
+        {!!session.data && <p>{JSON.stringify(session.data)}</p>}
         <div className={styles.grid}>
           <a href="https://nextjs.org/docs" className={styles.card}>
             <h2>Documentation &rarr;</h2>
