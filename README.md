@@ -1,6 +1,64 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# next-auth-keycloak
+This repo is an example authentication with next-auth and keycloak provider.
+
+[next-auth keycloak](https://next-auth.js.org/providers/keycloak)
+
+## Keycloak configuration
+
+Run `docker-compose -f keycloak-docker-compose.yml up -d` in order to start the keycloak server with a `postgresql` database for persistence.
+
+Create a new *realm*, add users, and **create an openid-connect client with "confidential" as the "Access Type"**.
+
+## Configure next-auth
+
+The first step is to configure the next-auth provider to Keycloak. Under the `/api/auth` directory create a new file `[...nextauth].ts`.
+
+The important bit is the provider definition:
+
+```
+KeycloakProvider({
+            clientId: "<CLIENT_ID>",
+            clientSecret: "<CLIENT_SECRET>",
+            issuer: "http://localhost:8080/auth/realms/<REALM>",
+        }),
+```
+
+The issuer parameter must contain the **realm**.
+
+There is a problem with invalidating the session on the keycloak server when we Sign-Out. This is resolved with the following bit.
+
+```
+const {push} = useRouter();
+
+const logout = () => {
+  signOut({redirect: false}).then(() =>
+      push(
+          `http://localhost:8080/auth/realms/<REALM>/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent(
+              "http://localhost:3000/"
+          )}`
+      )
+  );
+}
+```
+
+On the Sign-Out operation we set the redirect to *false* and on *then* we use the router hook to push to keycloak logout api with 
+specific redirect uri.
+
+![home_signed_out.png](docs/home_signed_out.png)
+
+After clicking on the Sign-In button we are redirected to keycloak's login screen.
+![keycloak_sign_in.png](docs/keycloak_sign_in.png)
+
+After successfully logging in, we are redirected back to Home.
+![home_signed_in.png](docs/home_signed_in.png)
+
+
+Interesting read on the Sign-Out function is this [reddit comment](https://www.reddit.com/user/doombubbles/).
+
 
 ## Getting Started
+
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 First, run the development server:
 
